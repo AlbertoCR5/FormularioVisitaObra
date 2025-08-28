@@ -36,9 +36,10 @@ class ImageProcessor {
       return;
     }
     
-    // Obtenemos el índice donde insertar las tablas, justo antes del párrafo del placeholder.
+    // Obtenemos el índice donde insertar las tablas y eliminamos el párrafo del placeholder.
     const parentParagraph = placeholderElement.getParent().asParagraph();
     const insertionIndex = this.body.getChildIndex(parentParagraph);
+    parentParagraph.removeFromParent();
 
     Logger.log(`🖼️ Procesando ${this.fileIds.length} imágenes para "${this.placeholder}"...`);
 
@@ -48,16 +49,37 @@ class ImageProcessor {
       chunks.push(this.fileIds.slice(i, i + this.IMAGENES_POR_TABLA));
     }
 
-    // Creamos y rellenamos una tabla por cada grupo de imágenes.
-    chunks.forEach((chunk, chunkIndex) => {
-      const table = this._createTableForChunk(chunk, insertionIndex + chunkIndex);
+    // Invertimos los chunks para insertarlos en el mismo índice y que queden en el orden correcto.
+    chunks.reverse().forEach(chunk => {
+      const table = this._createTableForChunk(chunk, insertionIndex);
       if (table) {
         this._populateTableWithImages(table, chunk);
+        
+        // Google Docs puede añadir párrafos vacíos alrededor de la tabla. Eliminamos todos los párrafos
+        // vacíos consecutivos antes y después para evitar cualquier salto de línea entre tablas.
+        let prev = table.getPreviousSibling();
+        while (prev && prev.getType() === DocumentApp.ElementType.PARAGRAPH && prev.asParagraph().getText().trim() === '') {
+          const toRemove = prev;
+          prev = prev.getPreviousSibling();
+          toRemove.removeFromParent();
+        }
+
+        let next = table.getNextSibling();
+        while (next && next.getType() === DocumentApp.ElementType.PARAGRAPH && next.asParagraph().getText().trim() === '') {
+          const toRemove = next;
+          next = next.getNextSibling();
+          toRemove.removeFromParent();
+        }
       }
     });
+    // Limpieza post-procesado: eliminamos párrafos vacíos que queden adyacentes a tablas
+    // (más agresivo) para eliminar saltos de línea residuales.
+    try {
+      this._removeEmptyParagraphsAroundTables();
+    } catch (e) {
+      Logger.log('⚠️ Error al limpiar párrafos vacíos: ' + e.toString());
+    }
     
-    // Eliminamos el párrafo que contenía el placeholder.
-    parentParagraph.removeFromParent();
     Logger.log(`✅ Todas las tablas de imágenes para "${this.placeholder}" fueron creadas y el placeholder eliminado.`);
   }
 
@@ -79,6 +101,18 @@ class ImageProcessor {
     const style = {};
     style[DocumentApp.Attribute.BORDER_WIDTH] = 0;
     table.setAttributes(style);
+    // Intentamos fijar el ancho de columnas para que cada celda pueda alojar una imagen de 7.50cm.
+    // 1 cm = 28.3465 points. 7.50 cm = 212.6 points.
+    const imageSizePoints = 28.3465 * 7.5; // 212.59875 ~ 212.6
+    try {
+      for (let c = 0; c < this.COLUMNAS_POR_TABLA; c++) {
+        table.setColumnWidth(c, imageSizePoints);
+      }
+    } catch (e) {
+      // Si la API no soporta setColumnWidth en esta versión, lo ignoramos y lo intentaremos
+      // fijando la altura mínima de las celdas al insertar las imágenes.
+      Logger.log('⚠️ setColumnWidth no disponible: ' + e.toString());
+    }
     
     return table;
   }
@@ -99,12 +133,22 @@ class ImageProcessor {
         const colIndex = index % this.COLUMNAS_POR_TABLA;
         const cell = table.getCell(rowIndex, colIndex);
         
-        // Limpiamos la celda y eliminamos el padding.
-        cell.clear();
-        cell.setPaddingTop(0).setPaddingBottom(0).setPaddingLeft(0).setPaddingRight(0);
+                // Limpiamos la celda, eliminamos el padding y centramos verticalmente.
+                cell.clear();
+                cell.setPaddingTop(0).setPaddingBottom(0).setPaddingLeft(0).setPaddingRight(0);
+                cell.setVerticalAlignment(DocumentApp.VerticalAlignment.MIDDLE);
 
-        const insertedImage = cell.insertImage(0, imageBlob);
-        this._styleImageToFitCell(insertedImage, cell);
+                // Aseguramos una altura mínima para la celda equivalente al tamaño de la imagen
+                // para evitar que Google Docs reescale la imagen para ajustarla a una celda más pequeña.
+                const imageSizePoints = 28.3465 * 7.5; // 212.59875
+                try {
+                  cell.setMinimumHeight(imageSizePoints);
+                } catch (e) {
+                  // Algunas versiones no exponen setMinimumHeight; ignorar si falla.
+                }
+
+                const insertedImage = cell.insertImage(0, imageBlob);
+                this._styleImageToFitCell(insertedImage, cell);
 
       } catch (e) {
         Logger.log(`❌ No se pudo insertar la imagen con ID ${fileId}: ${e.toString()}`);
@@ -122,19 +166,50 @@ class ImageProcessor {
    * @private
    */
   _styleImageToFitCell(image, cell) {
-    // Calculamos el ancho disponible en la página para la tabla.
-    const pageWidth = this.body.getPageWidth() - this.body.getMarginLeft() - this.body.getMarginRight();
-    const cellWidth = pageWidth / this.COLUMNAS_POR_TABLA;
-    
-    // Centramos el párrafo que contiene la imagen.
-    image.getParent().asParagraph().setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-    
-    const originalWidth = image.getWidth();
-    const originalHeight = image.getHeight();
-    const aspectRatio = originalHeight / originalWidth;
+    // 1 cm = 28.3465 points. 7.50 cm = 212.6 points.
+    const imageSize = 212.6; 
 
-    // Ajustamos la imagen al ancho de la celda, manteniendo la proporción.
-    image.setWidth(cellWidth);
-    image.setHeight(cellWidth * aspectRatio);
+    // Centramos el párrafo que contiene la imagen.
+    const paragraph = image.getParent().asParagraph();
+    paragraph.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+    // Eliminar espaciado adicional del párrafo que puede crear saltos verticales.
+    try {
+      paragraph.setSpacingBefore(0);
+      paragraph.setSpacingAfter(0);
+    } catch (e) {
+      // Algunas versiones de DocumentApp no exponen setSpacingBefore/After; ignorar si falla.
+    }
+
+    // Ajustamos la imagen a un tamaño fijo de 7.50cm x 7.50cm en puntos.
+    image.setWidth(imageSize).setHeight(imageSize);
+  }
+
+  /**
+   * Recorre el body y elimina párrafos vacíos que estén adyacentes a tablas
+   * o que sean parte de grupos de párrafos vacíos consecutivos.
+   * Esto ayuda a eliminar saltos de línea insertados por Google Docs alrededor de tablas.
+   * @private
+   */
+  _removeEmptyParagraphsAroundTables() {
+    const numChildren = this.body.getNumChildren();
+    // Recorremos de atrás hacia adelante para poder eliminar elementos sin romper índices.
+    for (let i = numChildren - 1; i >= 0; i--) {
+      const child = this.body.getChild(i);
+      if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
+        const para = child.asParagraph();
+        if (para.getText().trim() === '') {
+          const prev = i > 0 ? this.body.getChild(i - 1) : null;
+          const next = i < this.body.getNumChildren() - 1 ? this.body.getChild(i + 1) : null;
+          const prevIsTable = prev && prev.getType() === DocumentApp.ElementType.TABLE;
+          const nextIsTable = next && next.getType() === DocumentApp.ElementType.TABLE;
+          const nextIsEmptyPara = next && next.getType() === DocumentApp.ElementType.PARAGRAPH && next.asParagraph().getText().trim() === '';
+          const prevIsEmptyPara = prev && prev.getType() === DocumentApp.ElementType.PARAGRAPH && prev.asParagraph().getText().trim() === '';
+
+          if (prevIsTable || nextIsTable || nextIsEmptyPara || prevIsEmptyPara) {
+            para.removeFromParent();
+          }
+        }
+      }
+    }
   }
 }
