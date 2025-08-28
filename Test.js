@@ -12,12 +12,11 @@
  */
 function generarDatosDePruebaCompletos() {
 
-   // --- INICIO DE LA MODIFICACIÓN ---
-    // ID de la imagen que se usará para la prueba.
-    const idImagenUnica = '1rQ9uytz85b1dkVA6cfzc_TZ8WlD1rOVE';
-    // Crear un array que repite el mismo ID 30 veces para simular la subida masiva.
-    const idsImagenesPrueba30 = Array(30).fill(idImagenUnica);
-    // --- FIN DE LA MODIFICACIÓN ---
+   // --- OBTENCIÓN Y DISTRIBUCIÓN DE IMÁGENES REALES ---
+    const todosLosIdsDeImagenes = obtenerIdsDeImagenesDePrueba();
+    const idsImagenes1a10 = todosLosIdsDeImagenes.slice(0, 10);
+    const idsImagenes11a20 = todosLosIdsDeImagenes.slice(10, 20);
+    const idsImagenes21a30 = todosLosIdsDeImagenes.slice(20, 30);
 
     const datosBase = [
         // --- DATOS GENERALES ---
@@ -125,25 +124,10 @@ function generarDatosDePruebaCompletos() {
         { titulo: 'El trabajo realizado requiere:', respuesta: ['Manipular cargas de forma manual', 'Adoptar posturas forzadas', 'Movimientos repetitivos'], tipo: FormApp.ItemType.CHECKBOX },
         { titulo: 'En general, ¿cómo valorarías el equilibrio entre el esfuerzo físico requerido y la aplicación de medidas preventivas en el trabajo realizado?', respuesta: 3, tipo: FormApp.ItemType.RATING },
         
-        // --- INICIO DE LA MODIFICACIÓN ---
-        // --- IMÁGENES ---
-        // Se simula la subida de 30 imágenes. El sistema las distribuirá automáticamente.
-        { 
-          titulo: 'Adjunta imágenes (1-10 archivos)', 
-          respuesta: idsImagenesPrueba30, 
-          tipo: FormApp.ItemType.FILE_UPLOAD 
-        },
-        { 
-          titulo: 'Adjunta imágenes adicionales (11-20 archivos)', 
-          respuesta: [], // Se deja vacío para probar que el sistema lo gestiona
-          tipo: FormApp.ItemType.FILE_UPLOAD 
-        },
-        { 
-          titulo: 'Adjunta imágenes adicionales (21-30 archivos)', 
-          respuesta: [], // Se deja vacío para probar que el sistema lo gestiona
-          tipo: FormApp.ItemType.FILE_UPLOAD 
-        },
-        // --- FIN DE LA MODIFICACIÓN ---
+        // --- IMÁGENES (distribuidas correctamente) ---
+        { titulo: 'Adjuntar imágenes (1 a 10)', respuesta: idsImagenes1a10, tipo: FormApp.ItemType.FILE_UPLOAD },
+        { titulo: 'Adjuntar imágenes (11 a 20)', respuesta: idsImagenes11a20, tipo: FormApp.ItemType.FILE_UPLOAD },
+        { titulo: 'Adjuntar imágenes (21 a 30)', respuesta: idsImagenes21a30, tipo: FormApp.ItemType.FILE_UPLOAD },
 
         // --- OBSERVACIONES Y FINAL ---
         { titulo: 'Utiliza este espacio para añadir cualquier comentario, aclaración o información relevante que consideres importante sobre el trabajo realizado o las condiciones evaluadas.', respuesta: 'Test completo con 20 empresas simuladas.', tipo: FormApp.ItemType.PARAGRAPH_TEXT },
@@ -152,6 +136,41 @@ function generarDatosDePruebaCompletos() {
     ];
 
     return [...datosBase, ...datosEmpresas, ...datosFinales];
+}
+/**
+ * Obtiene los IDs de las imágenes de una carpeta específica en Google Drive y las ordena numéricamente.
+ * @returns {string[]} Un array con los IDs de las imágenes ordenados.
+ */
+function obtenerIdsDeImagenesDePrueba() {
+  // ID de la carpeta que contiene las 30 imágenes de prueba.
+  const folderId = '1K1o4Mmx7_OhEw7lSXVBEuM-vWZxXH3PT';
+  try {
+    const folder = DriveApp.getFolderById(folderId);
+    const files = folder.getFiles();
+    const imageInfo = [];
+    
+    while (files.hasNext()) {
+      const file = files.next();
+      // Extraemos el número del nombre del archivo para poder ordenar.
+      const fileName = file.getName();
+      const fileNumber = parseInt(fileName.split('.')[0], 10);
+      if (!isNaN(fileNumber)) {
+        imageInfo.push({ number: fileNumber, id: file.getId() });
+      }
+    }
+    
+    // Ordenamos el array basándonos en el número extraído del nombre del archivo.
+    imageInfo.sort((a, b) => a.number - b.number);
+    
+    Logger.log(`Se encontraron y ordenaron ${imageInfo.length} imágenes de la carpeta de prueba.`);
+    // Devolvemos solo los IDs ya ordenados.
+    return imageInfo.map(info => info.id);
+
+  } catch (e) {
+    Logger.log(`❌ ERROR al acceder a la carpeta de Drive "${folderId}": ${e.toString()}`);
+    // Si hay un error (ej. permisos), devolvemos un array vacío para no detener la prueba.
+    return [];
+  }
 }
 
 const DATOS_DE_PRUEBA = generarDatosDePruebaCompletos();

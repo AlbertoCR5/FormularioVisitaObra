@@ -221,43 +221,42 @@ class ReportGenerator {
    */
   _insertarGruposDeImagenes(body) {
     Logger.log('🖼️ Iniciando la inserción de grupos de imágenes...');
-    
-    // Mapeo entre los títulos de las preguntas del formulario y los placeholders del documento.
-    const imagePlaceholdersMap = {
-      'Adjunta imágenes (1-10 archivos)': '{{imagenesHasta10}}',
-      'Adjunta imágenes adicionales (11-20 archivos)': '{{imagenesHasta20}}',
-      'Adjunta imágenes adicionales (21-30 archivos)': '{{imagenesHasta30}}'
-    };
 
+    // Recoge todos los IDs de imágenes de todas las preguntas
     const allImageIds = Object.values(this.reportData.imageResponses).flat();
 
+    // Definir los placeholders de la plantilla (por bloques de 10)
+    const placeholders = [
+      '{{imagenesHasta10}}',
+      '{{imagenesHasta20}}',
+      '{{imagenesHasta30}}'
+    ];
+
     if (allImageIds.length > 0) {
-      // Procesa el primer grupo de imágenes (1-10)
-      const placeholder1 = imagePlaceholdersMap['Adjunta imágenes (1-10 archivos)'];
-      const ids1 = allImageIds.slice(0, 10);
-      const imageProcessor1 = new ImageProcessor(body, placeholder1, ids1);
-      imageProcessor1.insertImages();
+      Logger.log(`📸 Total de imágenes encontradas: ${allImageIds.length}`);
 
-      // Procesa el segundo grupo de imágenes (11-20)
-      const placeholder2 = imagePlaceholdersMap['Adjunta imágenes adicionales (11-20 archivos)'];
-      const ids2 = allImageIds.slice(10, 20);
-      const imageProcessor2 = new ImageProcessor(body, placeholder2, ids2);
-      imageProcessor2.insertImages();
+      // Dividir imágenes en grupos de 10
+      placeholders.forEach((ph, index) => {
+        const start = index * 10;
+        const end = start + 10;
+        const imageGroup = allImageIds.slice(start, end);
 
-      // Procesa el tercer grupo de imágenes (21-30)
-      const placeholder3 = imagePlaceholdersMap['Adjunta imágenes adicionales (21-30 archivos)'];
-      const ids3 = allImageIds.slice(20, 30);
-      const imageProcessor3 = new ImageProcessor(body, placeholder3, ids3);
-      imageProcessor3.insertImages();
-      
+        if (imageGroup.length > 0) {
+          Logger.log(`🔹 Insertando ${imageGroup.length} imágenes en ${ph}`);
+
+          const imageProcessor = new ImageProcessor(body, ph, imageGroup);
+          imageProcessor.insertImages();
+        } else {
+          // Si no hay imágenes para este grupo, limpiar placeholder
+          body.replaceText(ph, '');
+          Logger.log(`⚪ No hay imágenes para ${ph}, se limpió el placeholder.`);
+        }
+      });
+
     } else {
-       // Si no hay imágenes, limpia todos los placeholders de imágenes.
-       Object.values(imagePlaceholdersMap).forEach(placeholder => {
-         body.replaceText(placeholder, '');
-       });
-       Logger.log('🤷 No se adjuntaron imágenes, placeholders de imágenes limpiados.');
+      // Si no hay imágenes, limpiar todos los placeholders
+      placeholders.forEach(ph => body.replaceText(ph, ''));
+      Logger.log('🤷 No se adjuntaron imágenes, todos los placeholders limpiados.');
     }
-    
-    Logger.log('✅ Finalizada la inserción de grupos de imágenes.');
   }
 }
