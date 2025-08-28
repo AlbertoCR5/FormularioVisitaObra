@@ -31,9 +31,8 @@ class ReportGenerator {
       this._rellenarContenido(doc, body);
       
       // FASE 4: Insertar las imágenes adjuntas.
-      const imageProcessor = new ImageProcessor(body, this.reportData.imageFileIds);
-      imageProcessor.insertImages();
-
+      this._insertarGruposDeImagenes(body);
+      
       // FASE 5: Aplicar estilos finales.
       this._aplicarEstilosFinales(body);
 
@@ -213,5 +212,52 @@ class ReportGenerator {
         element = body.findText(textoAEncontrar, element);
       }
     });
+  }
+
+  /**
+   * Inserta todos los grupos de imágenes en sus respectivos placeholders.
+   * @param {GoogleAppsScript.Document.Body} body El cuerpo del documento.
+   * @private
+   */
+  _insertarGruposDeImagenes(body) {
+    Logger.log('🖼️ Iniciando la inserción de grupos de imágenes...');
+    
+    // Mapeo entre los títulos de las preguntas del formulario y los placeholders del documento.
+    const imagePlaceholdersMap = {
+      'Adjunta imágenes (1-10 archivos)': '{{imagenesHasta10}}',
+      'Adjunta imágenes adicionales (11-20 archivos)': '{{imagenesHasta20}}',
+      'Adjunta imágenes adicionales (21-30 archivos)': '{{imagenesHasta30}}'
+    };
+
+    const allImageIds = Object.values(this.reportData.imageResponses).flat();
+
+    if (allImageIds.length > 0) {
+      // Procesa el primer grupo de imágenes (1-10)
+      const placeholder1 = imagePlaceholdersMap['Adjunta imágenes (1-10 archivos)'];
+      const ids1 = allImageIds.slice(0, 10);
+      const imageProcessor1 = new ImageProcessor(body, placeholder1, ids1);
+      imageProcessor1.insertImages();
+
+      // Procesa el segundo grupo de imágenes (11-20)
+      const placeholder2 = imagePlaceholdersMap['Adjunta imágenes adicionales (11-20 archivos)'];
+      const ids2 = allImageIds.slice(10, 20);
+      const imageProcessor2 = new ImageProcessor(body, placeholder2, ids2);
+      imageProcessor2.insertImages();
+
+      // Procesa el tercer grupo de imágenes (21-30)
+      const placeholder3 = imagePlaceholdersMap['Adjunta imágenes adicionales (21-30 archivos)'];
+      const ids3 = allImageIds.slice(20, 30);
+      const imageProcessor3 = new ImageProcessor(body, placeholder3, ids3);
+      imageProcessor3.insertImages();
+      
+    } else {
+       // Si no hay imágenes, limpia todos los placeholders de imágenes.
+       Object.values(imagePlaceholdersMap).forEach(placeholder => {
+         body.replaceText(placeholder, '');
+       });
+       Logger.log('🤷 No se adjuntaron imágenes, placeholders de imágenes limpiados.');
+    }
+    
+    Logger.log('✅ Finalizada la inserción de grupos de imágenes.');
   }
 }

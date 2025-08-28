@@ -38,7 +38,7 @@ class EmailSender {
           const correosFijos = EMAIL_CONFIG.RECIPIENT_ALWAYS.split(',').map(email => email.trim());
           correosFijos.forEach(email => destinatariosVisitadores.add(email));
       }
-
+      destinatariosVisitadores = 0; //ELIMINAR Línea
       if (destinatariosVisitadores.size > 0) {
         const destinatariosArray = [...destinatariosVisitadores];
         MailApp.sendEmail({

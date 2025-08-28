@@ -22,7 +22,7 @@ class FormResponseProcessor {
     const datosParaRellenar = [];
     const ratingDataForStyling = [];
     const richDescriptionsToInsert = [];
-    const imageFileIds = [];
+    const imageResponses = {}; // Objeto para almacenar IDs por pregunta
     let fechaVisitaObj = null;
     const correosVisitadores = new Set();
     const correosIndividuales = new Set();
@@ -66,7 +66,10 @@ class FormResponseProcessor {
       }
 
       if (tipo === FormApp.ItemType.FILE_UPLOAD && respuesta && respuesta.length > 0) {
-          imageFileIds.push(...respuesta);
+          if (!imageResponses[titulo]) {
+            imageResponses[titulo] = [];
+          }
+          imageResponses[titulo].push(...respuesta);
           return;
       }
 
@@ -87,7 +90,6 @@ class FormResponseProcessor {
           richDescriptionsToInsert.push({ placeholder: placeholderDescription, summary: rules.summary, link: rules.link });
         } else {
           datosParaRellenar.push({ placeholder: placeholderDescription, respuesta: '' });
-          datosParaRellenar.push({ placeholder: placeholderOriginal, respuesta: String(respuesta || ' ') });
         }
       }
 
@@ -110,8 +112,8 @@ class FormResponseProcessor {
           datosParaRellenar.push({ placeholder: placeholderOriginal, respuesta: '' });
         }
       } 
-      else if (titulo === '¿Equipos de Protección Individuales (EPI) necesarios según la actividad?' && Array.isArray(respuesta)) {
-          respuesta = respuesta.filter(epi => epi && epi.trim() !== '').map(epi => `➤ ${epi.trim()}`).join('\n');
+      else if (titulo === 'Equipos de Protección Individuales (EPI) necesarios según la actividad' && typeof respuesta === 'string') {
+          respuesta = respuesta.split(/, |,| /).map(epi => epi.trim()).filter(epi => epi).map(epi => `➤ ${epi}`).join('\n');
           datosParaRellenar.push({ placeholder: placeholderOriginal, respuesta: String(respuesta || ' ') });
       } 
       else if (Array.isArray(respuesta)) {
@@ -121,15 +123,16 @@ class FormResponseProcessor {
               respuesta = respuesta.filter(op => op && op.trim() !== '').map(opcion => `➤ ${opcion.trim()}`).join('\n');
           }
           datosParaRellenar.push({ placeholder: placeholderOriginal, respuesta: String(respuesta || ' ') });
-      } else if (titulo === 'Fecha Visita' && respuesta) {
-        fechaVisitaObj = new Date(itemResponse.getResponse());
-        respuesta = fechaVisitaObj.toLocaleDateString(CONFIG.LOCALE, CONFIG.DATE_FORMAT_OPTIONS).replace(/^\w/, c => c.toUpperCase());
-        datosParaRellenar.push({ placeholder: placeholderOriginal, respuesta: String(respuesta || ' ') });
-      } else if (titulo === 'Acompañantes' && respuesta) {
-        respuesta = String(respuesta).replace(/\s*,\s*\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '').trim();
-        datosParaRellenar.push({ placeholder: placeholderOriginal, respuesta: String(respuesta || ' ') });
       } else {
         datosParaRellenar.push({ placeholder: placeholderOriginal, respuesta: String(respuesta || ' ') });
+      }
+
+      if (titulo === 'Fecha Visita' && respuesta) {
+        fechaVisitaObj = new Date(itemResponse.getResponse());
+        respuesta = fechaVisitaObj.toLocaleDateString(CONFIG.LOCALE, CONFIG.DATE_FORMAT_OPTIONS).replace(/^\w/, c => c.toUpperCase());
+      }
+      if (titulo === 'Acompañantes' && respuesta) {
+        respuesta = String(respuesta).replace(/\s*,\s*\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '').trim();
       }
     });
 
@@ -141,7 +144,7 @@ class FormResponseProcessor {
         correosVisitadores: [...correosVisitadores],
         correosIndividuales: [...correosIndividuales],
         nombreEmpresaPrincipal: nombreEmpresaPrincipal || 'Sin Nombre',
-        imageFileIds: imageFileIds,
+        imageResponses: imageResponses, // Devolver el objeto con las respuestas de imágenes
         disponeLocalRespuesta
     };
   }

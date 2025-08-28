@@ -1,7 +1,7 @@
 /**
  * @file Styling.gs
  * @description Centraliza la configuración y las funciones de estilo para el informe.
- * @version 2.0.0 (Funciones de estilo añadidas)
+ * @version 2.1.0 (Función de estilo robusta)
  * @author Alberto Castro (Refactorizado por Gemini)
  */
 
@@ -50,6 +50,7 @@ function aplicarEstilosFinales(body, reportData) {
       const color = RATING_COLORS[data.score];
       const consejoText = RESPUESTAS_ESPECIFICAS[data.titulo] && RESPUESTAS_ESPECIFICAS[data.titulo][data.score];
       if (consejoText) {
+        // --- LLAMADA A LA FUNCIÓN CORREGIDA ---
         styleRatingConsejo(body, consejoText, color);
       }
       styleTextInBody(body, data.starString, color, 15, true, false);
@@ -60,37 +61,55 @@ function aplicarEstilosFinales(body, reportData) {
 
 
 /**
- * Aplica estilo a los consejos de valoración basados en una palabra clave (ej. "CRÍTICO").
+ * (VERSIÓN CORREGIDA) Aplica estilo a los consejos de valoración de forma robusta.
+ * Busca solo la palabra clave y luego formatea el resto del texto.
  * @param {GoogleAppsScript.Document.Body} body El cuerpo del documento.
- * @param {string} textToFind El texto a buscar.
- * @param {string} color El código de color a aplicar.
+ * @param {string} textToFind El texto completo del consejo a buscar (ej. "CRÍTICO: ...").
+ * @param {string} color El código de color a aplicar a la palabra clave.
  */
 function styleRatingConsejo(body, textToFind, color) {
-  let searchResult = body.findText(textToFind);
+  // 1. Extraer la palabra clave del texto completo. Añadimos los dos puntos.
+  const keyword = textToFind.split(':')[0] + ':'; // ej. "CRÍTICO:"
+
+  // 2. Buscar SOLO la palabra clave. Esto es mucho más fiable que buscar el texto entero.
+  let searchResult = body.findText(keyword);
+
   while (searchResult !== null) {
     const thisElement = searchResult.getElement().asText();
-    const startIndex = searchResult.getStartOffset();
-    const endIndex = searchResult.getEndOffsetInclusive();
-    
-    const keyword = textToFind.split(':')[0];
-    const keywordEndIndex = startIndex + keyword.length;
+    const fullTextInElement = thisElement.getText();
 
-    thisElement.setBold(startIndex, keywordEndIndex, true);
-    thisElement.setForegroundColor(startIndex, keywordEndIndex, color);
-    thisElement.setItalic(startIndex, keywordEndIndex, false);
-    thisElement.setFontSize(startIndex, keywordEndIndex, 12);
+    // 3. Comprobación de seguridad: Nos aseguramos de que el párrafo donde encontramos la
+    //    palabra clave realmente contiene el texto completo del consejo.
+    //    Esto evita dar formato a una palabra clave que aparezca sola en otro lugar.
+    if (fullTextInElement.includes(textToFind)) {
+      const keywordStartIndex = searchResult.getStartOffset();
+      const keywordEndIndex = searchResult.getEndOffsetInclusive();
 
-    const descriptionStartIndex = keywordEndIndex + 2;
-    if (descriptionStartIndex <= endIndex) {
-      thisElement.setBold(descriptionStartIndex, endIndex, false);
-      thisElement.setForegroundColor(descriptionStartIndex, endIndex, '#000000');
-      thisElement.setItalic(descriptionStartIndex, endIndex, true);
-      thisElement.setFontSize(descriptionStartIndex, endIndex, 12);
+      // Calcular el final del texto completo del consejo para formatear la descripción
+      const fullConsejoEndIndex = keywordStartIndex + textToFind.length - 1;
+
+      // --- Aplicar estilo a la PALABRA CLAVE ---
+      thisElement.setBold(keywordStartIndex, keywordEndIndex, true);
+      thisElement.setForegroundColor(keywordStartIndex, keywordEndIndex, color);
+      thisElement.setItalic(keywordStartIndex, keywordEndIndex, false);
+      thisElement.setFontSize(keywordStartIndex, keywordEndIndex, 12);
+
+      // --- Aplicar estilo a la DESCRIPCIÓN ---
+      // La descripción empieza 2 caracteres después de la palabra clave (para saltar ':' y el espacio)
+      const descriptionStartIndex = keywordEndIndex + 2;
+      if (descriptionStartIndex <= fullConsejoEndIndex) {
+        thisElement.setBold(descriptionStartIndex, fullConsejoEndIndex, false);
+        thisElement.setForegroundColor(descriptionStartIndex, fullConsejoEndIndex, '#000000');
+        thisElement.setItalic(descriptionStartIndex, fullConsejoEndIndex, true);
+        thisElement.setFontSize(descriptionStartIndex, fullConsejoEndIndex, 12);
+      }
     }
     
-    searchResult = body.findText(textToFind, searchResult);
+    // Buscar la siguiente aparición de la palabra clave
+    searchResult = body.findText(keyword, searchResult);
   }
 }
+
 
 /**
  * Aplica un estilo genérico a un texto encontrado en el cuerpo del documento.

@@ -11,6 +11,14 @@
  * y enviar el formulario manualmente cada vez.
  */
 function generarDatosDePruebaCompletos() {
+
+   // --- INICIO DE LA MODIFICACIÓN ---
+    // ID de la imagen que se usará para la prueba.
+    const idImagenUnica = '1rQ9uytz85b1dkVA6cfzc_TZ8WlD1rOVE';
+    // Crear un array que repite el mismo ID 30 veces para simular la subida masiva.
+    const idsImagenesPrueba30 = Array(30).fill(idImagenUnica);
+    // --- FIN DE LA MODIFICACIÓN ---
+
     const datosBase = [
         // --- DATOS GENERALES ---
         { titulo: 'Empresa Visitada', respuesta: 'Constructora de Prueba (Test 20 Empresas)', tipo: FormApp.ItemType.TEXT },
@@ -117,12 +125,25 @@ function generarDatosDePruebaCompletos() {
         { titulo: 'El trabajo realizado requiere:', respuesta: ['Manipular cargas de forma manual', 'Adoptar posturas forzadas', 'Movimientos repetitivos'], tipo: FormApp.ItemType.CHECKBOX },
         { titulo: 'En general, ¿cómo valorarías el equilibrio entre el esfuerzo físico requerido y la aplicación de medidas preventivas en el trabajo realizado?', respuesta: 3, tipo: FormApp.ItemType.RATING },
         
+        // --- INICIO DE LA MODIFICACIÓN ---
         // --- IMÁGENES ---
+        // Se simula la subida de 30 imágenes. El sistema las distribuirá automáticamente.
         { 
-          titulo: 'Adjuntar imágenes (1 a 10)', 
-          respuesta: ['1-b1eHkTg0Kso4v3Gg2A9aZ3xZA2c8D_qL'], 
+          titulo: 'Adjunta imágenes (1-10 archivos)', 
+          respuesta: idsImagenesPrueba30, 
           tipo: FormApp.ItemType.FILE_UPLOAD 
         },
+        { 
+          titulo: 'Adjunta imágenes adicionales (11-20 archivos)', 
+          respuesta: [], // Se deja vacío para probar que el sistema lo gestiona
+          tipo: FormApp.ItemType.FILE_UPLOAD 
+        },
+        { 
+          titulo: 'Adjunta imágenes adicionales (21-30 archivos)', 
+          respuesta: [], // Se deja vacío para probar que el sistema lo gestiona
+          tipo: FormApp.ItemType.FILE_UPLOAD 
+        },
+        // --- FIN DE LA MODIFICACIÓN ---
 
         // --- OBSERVACIONES Y FINAL ---
         { titulo: 'Utiliza este espacio para añadir cualquier comentario, aclaración o información relevante que consideres importante sobre el trabajo realizado o las condiciones evaluadas.', respuesta: 'Test completo con 20 empresas simuladas.', tipo: FormApp.ItemType.PARAGRAPH_TEXT },
