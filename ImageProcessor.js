@@ -1,215 +1,132 @@
 /**
  * @file ImageProcessor.gs
- * @description Clase genérica para procesar e insertar grupos de imágenes en el informe.
- * @version 4.0.0 - Estilo de imagen mejorado: sin bordes, sin títulos y ocupando toda la celda.
+ * @description Clase para procesar e insertar un grupo consolidado de imágenes en una única tabla.
+ * @version 7.0.0 - Lógica de tabla única para eliminar saltos de línea entre grupos.
  * @author Gemini (Refactorizado)
  */
 class ImageProcessor {
   /**
    * @param {GoogleAppsScript.Document.Body} body El cuerpo del documento.
-   * @param {string} placeholder El placeholder exacto donde se insertarán las imágenes.
-   * @param {string[]} fileIds Un array con los IDs de los archivos de imagen.
+   * @param {string} placeholder El placeholder "maestro" donde se insertará la tabla.
+   * @param {string[]} allImageIds Un array con TODOS los IDs de imágenes a insertar.
    */
-  constructor(body, placeholder, fileIds) {
+  constructor(body, placeholder, allImageIds) {
     this.body = body;
     this.placeholder = placeholder;
-    this.fileIds = fileIds || [];
-    this.IMAGENES_POR_TABLA = 6;
+    this.allImageIds = allImageIds || [];
     this.COLUMNAS_POR_TABLA = 2;
+    this.IMAGE_SIZE_POINTS = 212.6; // 7.50 cm en puntos (1 cm = 28.3465 pt)
+    this.COLUMN_WIDTH_POINTS = 218.3; // 7.7 cm en puntos
   }
 
   /**
-   * Inserta todas las imágenes en una o más tablas en la ubicación del placeholder y luego lo elimina.
+   * Crea una única tabla para todas las imágenes en la ubicación del placeholder y luego lo elimina.
    */
-  insertImages() {
+  insertAllImagesAsSingleTable() {
     const placeholderRange = this.body.findText(this.placeholder);
     if (!placeholderRange) {
-      Logger.log(`⚠️ No se encontró el placeholder "${this.placeholder}".`);
+      Logger.log(`⚠️ No se encontró el placeholder maestro "${this.placeholder}".`);
       return;
     }
 
-    const placeholderElement = placeholderRange.getElement().asText();
-
-    if (this.fileIds.length === 0) {
-      placeholderElement.setText('');
-      Logger.log(`🤷 No se adjuntaron imágenes para "${this.placeholder}". Placeholder limpiado.`);
-      return;
-    }
-    
-    // Obtenemos el índice donde insertar las tablas y eliminamos el párrafo del placeholder.
-    const parentParagraph = placeholderElement.getParent().asParagraph();
+    const parentParagraph = placeholderRange.getElement().getParent().asParagraph();
     const insertionIndex = this.body.getChildIndex(parentParagraph);
     parentParagraph.removeFromParent();
 
-    Logger.log(`🖼️ Procesando ${this.fileIds.length} imágenes para "${this.placeholder}"...`);
-
-    // Dividimos el total de imágenes en grupos (chunks) para cada tabla.
-    const chunks = [];
-    for (let i = 0; i < this.fileIds.length; i += this.IMAGENES_POR_TABLA) {
-      chunks.push(this.fileIds.slice(i, i + this.IMAGENES_POR_TABLA));
+    const numRows = Math.ceil(this.allImageIds.length / this.COLUMNAS_POR_TABLA);
+    if (numRows === 0) {
+        Logger.log('No hay imágenes para insertar en la tabla única.');
+        return;
     }
 
-    // Invertimos los chunks para insertarlos en el mismo índice y que queden en el orden correcto.
-    chunks.reverse().forEach(chunk => {
-      const table = this._createTableForChunk(chunk, insertionIndex);
-      if (table) {
-        this._populateTableWithImages(table, chunk);
-        
-        // Google Docs puede añadir párrafos vacíos alrededor de la tabla. Eliminamos todos los párrafos
-        // vacíos consecutivos antes y después para evitar cualquier salto de línea entre tablas.
-        let prev = table.getPreviousSibling();
-        while (prev && prev.getType() === DocumentApp.ElementType.PARAGRAPH && prev.asParagraph().getText().trim() === '') {
-          const toRemove = prev;
-          prev = prev.getPreviousSibling();
-          toRemove.removeFromParent();
-        }
+    const table = this.body.insertTable(insertionIndex, Array.from({ length: numRows }, () => Array(this.COLUMNAS_POR_TABLA).fill('')));
+    this._styleTable(table);
 
-        let next = table.getNextSibling();
-        while (next && next.getType() === DocumentApp.ElementType.PARAGRAPH && next.asParagraph().getText().trim() === '') {
-          const toRemove = next;
-          next = next.getNextSibling();
-          toRemove.removeFromParent();
-        }
-      }
-    });
-    // Limpieza post-procesado: eliminamos párrafos vacíos que queden adyacentes a tablas
-    // (más agresivo) para eliminar saltos de línea residuales.
     try {
-      this._removeEmptyParagraphsAroundTables();
+      for (let i = 0; i < table.getNumRows(); i++) {
+        table.getRow(i).setMinimumHeight(this.COLUMN_WIDTH_POINTS);
+      }
     } catch (e) {
-      Logger.log('⚠️ Error al limpiar párrafos vacíos: ' + e.toString());
+      Logger.log(`⚠️ No se pudo fijar la altura mínima de las filas. Es posible que el entorno no lo soporte. Error: ${e.toString()}`);
     }
-    
-    Logger.log(`✅ Todas las tablas de imágenes para "${this.placeholder}" fueron creadas y el placeholder eliminado.`);
+
+    this.allImageIds.forEach((fileId, i) => {
+      const rowIndex = Math.floor(i / this.COLUMNAS_POR_TABLA);
+      const colIndex = i % this.COLUMNAS_POR_TABLA;
+      const cell = table.getCell(rowIndex, colIndex);
+      this._styleAndPopulateCell(cell, fileId);
+    });
+
+    Logger.log(`✅ Tabla única de ${numRows}x${this.COLUMNAS_POR_TABLA} creada para todas las imágenes.`);
   }
 
   /**
-   * Crea una nueva tabla con el estilo deseado (sin bordes).
-   * @param {string[]} chunk El grupo de IDs de imágenes para esta tabla.
-   * @param {number} index La posición en el body donde insertar la tabla.
-   * @returns {GoogleAppsScript.Document.Table | null} La tabla creada.
+   * Aplica estilos a la tabla, como bordes y ancho de columna.
+   * @param {GoogleAppsScript.Document.Table} table La tabla a estilizar.
    * @private
    */
-  _createTableForChunk(chunk, index) {
-    const numRows = Math.ceil(chunk.length / this.COLUMNAS_POR_TABLA);
-    if (numRows === 0) return null;
-    
-    const tableArray = Array.from({ length: numRows }, () => Array(this.COLUMNAS_POR_TABLA).fill(''));
-    const table = this.body.insertTable(index, tableArray);
-
-    // Aplicamos estilo sin bordes a toda la tabla.
+  _styleTable(table) {
     const style = {};
     style[DocumentApp.Attribute.BORDER_WIDTH] = 0;
     table.setAttributes(style);
-    // Intentamos fijar el ancho de columnas para que cada celda pueda alojar una imagen de 7.50cm.
-    // 1 cm = 28.3465 points. 7.50 cm = 212.6 points.
-    const imageSizePoints = 28.3465 * 7.5; // 212.59875 ~ 212.6
+
     try {
-      for (let c = 0; c < this.COLUMNAS_POR_TABLA; c++) {
-        table.setColumnWidth(c, imageSizePoints);
+      for (let i = 0; i < this.COLUMNAS_POR_TABLA; i++) {
+        table.setColumnWidth(i, this.COLUMN_WIDTH_POINTS);
       }
     } catch (e) {
-      // Si la API no soporta setColumnWidth en esta versión, lo ignoramos y lo intentaremos
-      // fijando la altura mínima de las celdas al insertar las imágenes.
-      Logger.log('⚠️ setColumnWidth no disponible: ' + e.toString());
+      Logger.log(`⚠️ No se pudo fijar el ancho de las columnas. Es posible que el entorno no lo soporte. Error: ${e.toString()}`);
     }
-    
-    return table;
   }
 
   /**
-   * Rellena una tabla con un grupo de imágenes, ajustándolas a la celda.
-   * @param {GoogleAppsScript.Document.Table} table La tabla a rellenar.
-   * @param {string[]} chunk El grupo de IDs de imágenes.
+   * Estiliza una celda y la rellena con una imagen.
+   * @param {GoogleAppsScript.Document.TableCell} cell La celda a modificar.
+   * @param {string} fileId El ID del archivo de imagen.
    * @private
    */
-  _populateTableWithImages(table, chunk) {
-    chunk.forEach((fileId, index) => {
-      try {
-        const imageFile = DriveApp.getFileById(fileId);
-        const imageBlob = imageFile.getBlob();
-
-        const rowIndex = Math.floor(index / this.COLUMNAS_POR_TABLA);
-        const colIndex = index % this.COLUMNAS_POR_TABLA;
-        const cell = table.getCell(rowIndex, colIndex);
-        
-                // Limpiamos la celda, eliminamos el padding y centramos verticalmente.
-                cell.clear();
-                cell.setPaddingTop(0).setPaddingBottom(0).setPaddingLeft(0).setPaddingRight(0);
-                cell.setVerticalAlignment(DocumentApp.VerticalAlignment.MIDDLE);
-
-                // Aseguramos una altura mínima para la celda equivalente al tamaño de la imagen
-                // para evitar que Google Docs reescale la imagen para ajustarla a una celda más pequeña.
-                const imageSizePoints = 28.3465 * 7.5; // 212.59875
-                try {
-                  cell.setMinimumHeight(imageSizePoints);
-                } catch (e) {
-                  // Algunas versiones no exponen setMinimumHeight; ignorar si falla.
-                }
-
-                const insertedImage = cell.insertImage(0, imageBlob);
-                this._styleImageToFitCell(insertedImage, cell);
-
-      } catch (e) {
-        Logger.log(`❌ No se pudo insertar la imagen con ID ${fileId}: ${e.toString()}`);
-        const rowIndex = Math.floor(index / this.COLUMNAS_POR_TABLA);
-        const colIndex = index % this.COLUMNAS_POR_TABLA;
-        table.getCell(rowIndex, colIndex).setText(`[Error al cargar imagen ID: ${fileId}]`);
-      }
-    });
-  }
-
-  /**
-   * Aplica estilo a una imagen para que ocupe el ancho de la celda manteniendo la proporción.
-   * @param {GoogleAppsScript.Document.InlineImage} image La imagen a estilizar.
-   * @param {GoogleAppsScript.Document.TableCell} cell La celda que contiene la imagen.
-   * @private
-   */
-  _styleImageToFitCell(image, cell) {
-    // 1 cm = 28.3465 points. 7.50 cm = 212.6 points.
-    const imageSize = 212.6; 
-
-    // Centramos el párrafo que contiene la imagen.
-    const paragraph = image.getParent().asParagraph();
-    paragraph.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-    // Eliminar espaciado adicional del párrafo que puede crear saltos verticales.
+  _styleAndPopulateCell(cell, fileId) {
     try {
-      paragraph.setSpacingBefore(0);
-      paragraph.setSpacingAfter(0);
-    } catch (e) {
-      // Algunas versiones de DocumentApp no exponen setSpacingBefore/After; ignorar si falla.
-    }
+      cell.clear();
+      cell.setPaddingTop(0).setPaddingBottom(0).setPaddingLeft(0).setPaddingRight(0);
+      cell.setVerticalAlignment(DocumentApp.VerticalAlignment.MIDDLE);
 
-    // Ajustamos la imagen a un tamaño fijo de 7.50cm x 7.50cm en puntos.
-    image.setWidth(imageSize).setHeight(imageSize);
-  }
+      const imageFile = DriveApp.getFileById(fileId);
+      const imageBlob = imageFile.getBlob();
+      const insertedImage = cell.insertImage(0, imageBlob);
+      this._styleImage(insertedImage);
 
-  /**
-   * Recorre el body y elimina párrafos vacíos que estén adyacentes a tablas
-   * o que sean parte de grupos de párrafos vacíos consecutivos.
-   * Esto ayuda a eliminar saltos de línea insertados por Google Docs alrededor de tablas.
-   * @private
-   */
-  _removeEmptyParagraphsAroundTables() {
-    const numChildren = this.body.getNumChildren();
-    // Recorremos de atrás hacia adelante para poder eliminar elementos sin romper índices.
-    for (let i = numChildren - 1; i >= 0; i--) {
-      const child = this.body.getChild(i);
-      if (child.getType() === DocumentApp.ElementType.PARAGRAPH) {
-        const para = child.asParagraph();
-        if (para.getText().trim() === '') {
-          const prev = i > 0 ? this.body.getChild(i - 1) : null;
-          const next = i < this.body.getNumChildren() - 1 ? this.body.getChild(i + 1) : null;
-          const prevIsTable = prev && prev.getType() === DocumentApp.ElementType.TABLE;
-          const nextIsTable = next && next.getType() === DocumentApp.ElementType.TABLE;
-          const nextIsEmptyPara = next && next.getType() === DocumentApp.ElementType.PARAGRAPH && next.asParagraph().getText().trim() === '';
-          const prevIsEmptyPara = prev && prev.getType() === DocumentApp.ElementType.PARAGRAPH && prev.asParagraph().getText().trim() === '';
-
-          if (prevIsTable || nextIsTable || nextIsEmptyPara || prevIsEmptyPara) {
-            para.removeFromParent();
+      // Limpieza de párrafos vacíos residuales en la celda
+      const numChildren = cell.getNumChildren();
+      if (numChildren > 1) {
+        for (let i = numChildren - 1; i >= 0; i--) {
+          const child = cell.getChild(i);
+          if (child.getType() === DocumentApp.ElementType.PARAGRAPH && child.asParagraph().getText().trim() === '' && cell.getNumChildren() > 1) {
+            child.removeFromParent();
           }
         }
       }
+
+    } catch (e) {
+      Logger.log(`❌ No se pudo procesar la imagen con ID ${fileId}: ${e.toString()}`);
+      try {
+        cell.setText(`[Error al cargar imagen ID: ${fileId}]`);
+      } catch (cellError) {
+        Logger.log(`❌ No se pudo ni siquiera escribir en la celda: ${cellError.toString()}`);
+      }
     }
+  }
+
+  /**
+   * Aplica estilo a una imagen para que ocupe el tamaño definido.
+   * @param {GoogleAppsScript.Document.InlineImage} image La imagen a estilizar.
+   * @private
+   */
+  _styleImage(image) {
+    image.setWidth(this.IMAGE_SIZE_POINTS).setHeight(this.IMAGE_SIZE_POINTS);
+    const paragraph = image.getParent().asParagraph();
+    paragraph.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+    paragraph.setSpacingBefore(0);
+    paragraph.setSpacingAfter(0);
   }
 }

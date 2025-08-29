@@ -222,41 +222,42 @@ class ReportGenerator {
   _insertarGruposDeImagenes(body) {
     Logger.log('🖼️ Iniciando la inserción de grupos de imágenes...');
 
-    // Recoge todos los IDs de imágenes de todas las preguntas
     const allImageIds = Object.values(this.reportData.imageResponses).flat();
+    const placeholders = ['{{imagenesHasta10}}', '{{imagenesHasta20}}', '{{imagenesHasta30}}'];
 
-    // Definir los placeholders de la plantilla (por bloques de 10)
-    const placeholders = [
-      '{{imagenesHasta10}}',
-      '{{imagenesHasta20}}',
-      '{{imagenesHasta30}}'
-    ];
-
-    if (allImageIds.length > 0) {
-      Logger.log(`📸 Total de imágenes encontradas: ${allImageIds.length}`);
-
-      // Dividir imágenes en grupos de 10
-      placeholders.forEach((ph, index) => {
-        const start = index * 10;
-        const end = start + 10;
-        const imageGroup = allImageIds.slice(start, end);
-
-        if (imageGroup.length > 0) {
-          Logger.log(`🔹 Insertando ${imageGroup.length} imágenes en ${ph}`);
-
-          const imageProcessor = new ImageProcessor(body, ph, imageGroup);
-          imageProcessor.insertImages();
-        } else {
-          // Si no hay imágenes para este grupo, limpiar placeholder
-          body.replaceText(ph, '');
-          Logger.log(`⚪ No hay imágenes para ${ph}, se limpió el placeholder.`);
-        }
-      });
-
-    } else {
-      // Si no hay imágenes, limpiar todos los placeholders
+    if (allImageIds.length === 0) {
       placeholders.forEach(ph => body.replaceText(ph, ''));
-      Logger.log('🤷 No se adjuntaron imágenes, todos los placeholders limpiados.');
+      Logger.log('🤷 No se adjuntaron imágenes, todos los placeholders de imágenes limpiados.');
+      return;
+    }
+
+    Logger.log(`📸 Total de imágenes encontradas: ${allImageIds.length}`);
+
+    const masterPlaceholder = '{{IMAGENES_MASTER_PLACEHOLDER}}';
+    let firstPlaceholderFound = false;
+
+    for (const ph of placeholders) {
+      const range = body.findText(ph);
+      if (range) {
+        if (!firstPlaceholderFound) {
+          range.getElement().asText().setText(masterPlaceholder);
+          firstPlaceholderFound = true;
+        } else {
+          try {
+            // Elimina el párrafo que contiene el placeholder para evitar saltos de línea.
+            range.getElement().getParent().removeFromParent();
+          } catch (e) {
+            // Puede fallar si el párrafo ya fue eliminado, lo cual es seguro ignorar.
+          }
+        }
+      }
+    }
+
+    if (firstPlaceholderFound) {
+      const imageProcessor = new ImageProcessor(body, masterPlaceholder, allImageIds);
+      imageProcessor.insertAllImagesAsSingleTable();
+    } else {
+      Logger.log('⚠️ No se encontró ningún placeholder de imágenes en el documento.');
     }
   }
 }
