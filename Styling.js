@@ -1,8 +1,9 @@
 /**
  * @file Styling.gs
  * @description Centraliza la configuración y las funciones de estilo para el informe.
- * @version 2.1.0 (Función de estilo robusta)
- * @author Alberto Castro (Refactorizado por Gemini)
+ * @version 1.0.0
+ * @author Alberto Castro
+ * @email AlbertoCastrovas@gmail.com
  */
 
 // ===================================================================================

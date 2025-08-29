@@ -2,8 +2,9 @@
  * @file ImageProcessor.gs
  * @description Clase para procesar e insertar un grupo consolidado de imágenes en una única tabla.
  *              Se asegura que las imágenes tengan un tamaño uniforme (7,52 cm x 7,52 cm) usando un factor de escalado.
- * @version 8.1.0 - Re-implementa tablas y mantiene el escalado de imágenes.
- * @autor Gemini (Refactorizado)
+ * @version 1.0.0
+ * @author Alberto Castro
+ * @email AlbertoCastrovas@gmail.com
  */
 class ImageProcessor {
   /**

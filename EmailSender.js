@@ -2,7 +2,8 @@
  * @file EmailSender.gs
  * @description Clase para enviar el informe por correo electrónico.
  * @version 1.0.0
- * @author Gemini
+ * @author Alberto Castro
+ * @email AlbertoCastrovas@gmail.com
  */
 class EmailSender {
   /**

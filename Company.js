@@ -2,7 +2,8 @@
  * @file Company.gs
  * @description Clase para representar una empresa.
  * @version 1.0.0
- * @author Gemini
+ * @author Alberto Castro
+ * @email AlbertoCastrovas@gmail.com
  */
 class Company {
   constructor() {

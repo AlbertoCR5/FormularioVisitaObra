@@ -1,8 +1,9 @@
 /**
  * @file Configuration.gs
  * @description Centraliza toda la configuración y mapeo del script.
- * @version 1.3.0 (Ampliado a 20 empresas y añadido campo Cargo)
- * @author Alberto Castro (Refactorizado por Gemini)
+ * @version 1.0.0
+ * @author Alberto Castro
+ * @email AlbertoCastrovas@gmail.com
  */
 
 /**

@@ -1,14 +1,9 @@
 /**
  * @file Test.gs
  * @description Contiene funciones para probar la lógica principal de la aplicación.
- * @version 1.3.1 (Funcionalidad de imágenes comentada)
+ * @version 1.0.0
  * @author Alberto Castro
- *
- * @summary
- * Este archivo es fundamental para el desarrollo y la depuración del proyecto.
- * Su función principal es simular un envío completo del formulario de Google Forms
- * para poder probar la función `alEnviarFormulario(e)` sin necesidad de rellenar
- * y enviar el formulario manualmente cada vez.
+ * @email AlbertoCastrovas@gmail.com
  */
 function generarDatosDePruebaCompletos() {
 

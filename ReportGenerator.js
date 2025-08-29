@@ -2,7 +2,8 @@
  * @file ReportGenerator.gs
  * @description Clase para generar el informe de visita a obra.
  * @version 1.0.0
- * @author Gemini
+ * @author Alberto Castro
+ * @email AlbertoCastrovas@gmail.com
  */
 class ReportGenerator {
   /**

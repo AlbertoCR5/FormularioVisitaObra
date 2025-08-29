@@ -2,7 +2,8 @@
  * @file FormResponseProcessor.gs
  * @description Clase para procesar las respuestas del formulario.
  * @version 1.0.0
- * @author Gemini
+ * @author Alberto Castro
+ * @email AlbertoCastrovas@gmail.com
  */
 class FormResponseProcessor {
   /**

@@ -1,8 +1,9 @@
 /**
  * @file EmailConfig.gs
  * @description Centraliza la configuración para el envío de correos.
- * @version 1.1.0 (Añadido mapa de visitadores)
- * @author Alberto Castro (Implementado por Gemini)
+ * @version 1.0.0
+ * @author Alberto Castro
+ * @email AlbertoCastrovas@gmail.com
  */
 
 const EMAIL_CONFIG = {

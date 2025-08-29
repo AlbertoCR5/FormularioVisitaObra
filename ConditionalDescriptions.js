@@ -1,19 +1,10 @@
 /**
- * ===================================================================================
- * BASE DE DATOS DE DESCRIPCIONES CONDICIONALES (VERSIÓN ENRIQUECIDA)
- * ===================================================================================
- * Este archivo contiene descripciones mejoradas con resúmenes claros y enlaces
+ * @file ConditionalDescriptions.gs
+ * @description Este archivo contiene descripciones mejoradas con resúmenes claros y enlaces
  * directos a la normativa oficial para un mayor contexto y rigor.
- *
- * Estructura:
- * 'Título de la pregunta': {
- * conditions: ['Respuesta que activa la descripción'],
- * summary: 'Explicación clara y concisa del riesgo o incumplimiento.',
- * link: {
- * text: 'Texto visible del enlace (ej. Referencia legal: RD 1627/1997)',
- * url: 'URL directa al BOE o guía técnica.'
- * }
- * }
+ * @version 1.0.0
+ * @author Alberto Castro
+ * @email AlbertoCastrovas@gmail.com
  */
 
 const CONDITIONAL_DESCRIPTIONS = {

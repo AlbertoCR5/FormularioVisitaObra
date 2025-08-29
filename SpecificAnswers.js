@@ -1,12 +1,10 @@
 /**
- * ===================================================================================
- * BASE DE DATOS DE RESPUESTAS ESPECÍFICAS
- * ===================================================================================
- * Este archivo contiene todas las respuestas y consejos específicos para cada
+ * @file SpecificAnswers.gs
+ * @description Este archivo contiene todas las respuestas y consejos específicos para cada
  * pregunta calificable (tipo RATING) del formulario.
- *
- * Para modificar un consejo, simplemente edita el texto correspondiente a la
- * pregunta y a la puntuación deseada.
+ * @version 1.0.0
+ * @author Alberto Castro
+ * @email AlbertoCastrovas@gmail.com
  */
 
 const RESPUESTAS_ESPECIFICAS = {
