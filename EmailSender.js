@@ -55,7 +55,7 @@ class EmailSender {
       const destinatariosIndividuales = new Set(this.reportData.correosIndividuales.filter(Boolean));
       
       destinatariosVisitadores.forEach(email => destinatariosIndividuales.delete(email));
-
+      destinatariosIndividuales = 0; //ELIMINAR Línea
       if (destinatariosIndividuales.size > 0) {
         Logger.log(`📧 Iniciando bucle de envío individual para ${destinatariosIndividuales.size} destinatarios.`);
         destinatariosIndividuales.forEach(destinatario => {
