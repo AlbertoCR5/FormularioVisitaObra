@@ -22,8 +22,8 @@ const EMAIL_CONFIG = {
  * dirección de correo electrónico para el envío automático de informes.
  */
 const VISITOR_EMAIL_MAP = {
-  //'Manuel Gil Ruiz': 'prl.ficaugtsevilla@gmail.com',
-  //'Manuel Ponce': 'manuelponce.mca@gmail.com',
-  //'Carlos Parra': 'carlosparragmez@gmail.com'
+  'Manuel Gil Ruiz': 'prl.ficaugtsevilla@gmail.com',
+  'Manuel Ponce': 'manuelponce.mca@gmail.com',
+  'Carlos Parra': 'organizacion.sevilla@fica.ugt.org'
   // Puedes añadir más visitadores aquí si es necesario.
 };
