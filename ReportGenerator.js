@@ -224,7 +224,7 @@ class ReportGenerator {
     Logger.log('🖼️ Iniciando la inserción de grupos de imágenes...');
 
     const allImageIds = Object.values(this.reportData.imageResponses).flat();
-    const placeholders = ['{{imagenesHasta10}}', '{{imagenesHasta20}}', '{{imagenesHasta30}}'];
+    const placeholders = ['{{imagenesHasta10}}', '{{imagenesHasta20}}', '{{imagenesHasta30}}', '{{imagenesHasta40}}', '{{imagenesHasta50}}'];
 
     if (allImageIds.length === 0) {
       placeholders.forEach(ph => body.replaceText(ph, ''));

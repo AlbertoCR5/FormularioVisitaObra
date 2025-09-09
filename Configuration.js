@@ -16,8 +16,9 @@ const CONFIG = {
   TEMPLATE_DOC_ID: '1gK9pcJ_kOdCeXPcem0iJy8xLSdUdq9xiIaMcNQSlG-4',
   FOLDER_ID: '1V5q_RAjnsOknkFctaxQ4cg4kU1wMM8at',
   TIMEZONE: 'Europe/Madrid',
-  DATE_FORMAT_FILENAME: 'yyyy-MM-dd',
+  DATE_FORMAT_FILENAME: 'dd-mm-yyyy',
   DATE_FORMAT_OPTIONS: { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' },
+  DATE_FORMAT_REPORT: 'dd \'de\' MMMM \'de\' yyyy', // Nuevo formato para la fecha del inform
   LOCALE: 'es-ES'
 };
 
@@ -117,6 +118,8 @@ const QUESTION_TO_PLACEHOLDER_MAP = {
   'Adjuntar imágenes (1 a 10)': '{{adjuntarImagenes1a10}}',
   'Adjuntar imágenes (11 a 20)': '{{adjuntarImagenes11a20}}',
   'Adjuntar imágenes (21 a 30)': '{{adjuntarImagenes21a30}}',
+  'Adjuntar imágenes (31 a 40)': '{{adjuntarImagenes31a40}}',
+  'Adjuntar imágenes (41 a 50)': '{{adjuntarImagenes41a50}}',
   'Correo Adicional (Opcional):': '{{correoAdicional}}',
   'Hora Salida': '{{horaSalida}}'
 };
@@ -162,12 +165,13 @@ const CONDITIONAL_VISIBILITY_MAP = {
       'Estado de las mangueras y las conexiones', '{{estadoManguerasConexiones}}', '{{estadoManguerasConexionesConsejo}}', 'EXISTENCIA INSTALACIÓN ELÉCTRICA'
     ]
   },
-   '¿Las líneas de alta tensión están bien identificadas?': {
+  '¿Existen líneas de Alta Tensión en las proximidades?': {
     negativeAnswers: ['No'],
     elementosAHide: [
+      'LÍNEAS DE ALTA TENSIÓN EN PROXIMIDADES',
       '¿Las líneas de alta tensión están bien identificadas?',
       '{{lineasAltaTensionIdentificadas}}',
-      '{{lineasAltaTensionIdentificadasDescripcion}}', 'LÍNEAS DE ALTA TENSIÓN EN PROXIMIDADES'
+      '{{lineasAltaTensionIdentificadasDescripcion}}'
     ]
-  }
+  },
 };
