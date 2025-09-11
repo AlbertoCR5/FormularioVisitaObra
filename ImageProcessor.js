@@ -113,7 +113,8 @@ class ImageProcessor {
 
       // Obtener imagen como PNG para evitar problemas con DPI
       const imageFile = DriveApp.getFileById(fileId);
-      const imageBlob = imageFile.getBlob().getAs("image/png");
+      // Obtener imagen como JPEG para reducir el tamaño del archivo
+      const imageBlob = imageFile.getBlob().getAs("image/jpeg");
 
       // Insertar imagen
       const insertedImage = cell.insertImage(0, imageBlob);
