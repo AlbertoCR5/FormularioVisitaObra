@@ -196,3 +196,91 @@ const CONDITIONAL_VISIBILITY_MAP = {
     ]
   },
 };
+
+/**
+ * Placeholders cuyas respuestas deben ir en azul (#1155cc) a partir de la sección "GESTIÓN".
+ * Se excluyen descripciones y valoraciones por lógica en ReportGenerator.
+ */
+const PLACEHOLDERS_FROM_GESTION = [
+  // --- GESTIÓN ---
+  '{{existeCoordinadorSys}}',
+  '{{modalidadPRL}}',
+  '{{hayDelegadosPrevencion}}',
+  '{{hayComiteSys}}',
+  '{{medidasConcurrencia}}',
+
+  // --- EMERGENCIAS ---
+  '{{telefonosEmergenciaVisibles}}',
+  '{{comunicacionConCobertura}}',
+  '{{disponeBotiquin}}',
+  '{{revisionBotiquin}}',
+  '{{disponeLocalPrimerosAuxilios}}',
+  '{{senalizacionPrimerosAuxilios}}',
+  '{{disponeMediosExtincion}}',
+  '{{conoceEquipoEmergencia}}',
+  '{{formacionEquipoEmergencia}}',
+  '{{senalizacionViasEvacuacion}}',
+  '{{puntoReunionSenalizado}}',
+
+  // --- CONDICIONES GENERALES ---
+  '{{ordenLimpiezaGeneral}}',
+  '{{existenZonasAcopio}}',
+  '{{zonasAcopioDelimitadas}}',
+  '{{viasCirculacionAdecuadas}}',
+  '{{iluminacionSuficiente}}',
+  '{{valladoExteriorCorrecto}}',
+  '{{tajosBalizados}}',
+  '{{senalizacionGeneralSys}}',
+  '{{senalizacionRiesgosEspecificos}}',
+  '{{instalacionesHigieneCumplen}}',
+
+  // --- INSTALACIÓN ELÉCTRICA ---
+  '{{existeInstalacionElectrica}}',
+  '{{ubicacionCuadros}}',
+  '{{disponeTomaTierra}}',
+  '{{conexionesAdecuadas}}',
+  '{{disponeExtintorCO2}}',
+  '{{ubicacionExtintoresAdecuada}}',
+  '{{tendidoCables}}',
+  '{{estadoManguerasConexiones}}',
+  '{{hayLineasAltaTension}}',
+  '{{lineasAltaTensionIdentificadas}}',
+
+  // --- EQUIPOS, MEDIOS Y PROTECCIONES ---
+  '{{equiposTrabajoUtilizados}}',
+  '{{estadoEquiposTrabajo}}',
+  '{{maquinariaElevacionUtilizada}}',
+  '{{estadoMaquinariaElevacion}}',
+  '{{equiposAuxiliaresUtilizados}}',
+  '{{estadoEquiposAuxiliares}}',
+  '{{mediosProteccionColectiva}}',
+  '{{estadoMediosProteccionColectiva}}',
+  '{{redesSeguridad}}',
+  '{{estadoRedesSeguridad}}',
+
+  // --- EPIs ---
+  '{{episNecesarios}}',
+  '{{usoAdecuadoEpis}}',
+  '{{estadoEpis}}',
+
+  // --- RIESGOS HIGIÉNICOS Y ERGONÓMICOS ---
+  '{{usaProductosQuimicos}}',
+  '{{almacenamientoQuimicosAdecuado}}',
+  '{{etiquetadoQuimicos}}',
+  '{{planificacionMeteorologia}}',
+  '{{medidasProteccionClima}}',
+  '{{conocimientoProcedimientosClima}}',
+  '{{senalizacionPeligrosClima}}',
+  '{{trabajoRequiereEsfuerzo}}',
+  '{{valoracionEquilibrioEsfuerzo}}',
+
+  // --- OBSERVACIONES Y FINAL ---
+  '{{observacionesGenerales}}',
+  '{{adjuntarImagenes1a10}}',
+  '{{adjuntarImagenes11a20}}',
+  '{{adjuntarImagenes21a30}}',
+  '{{adjuntarImagenes31a40}}',
+  '{{adjuntarImagenes41a50}}',
+  '{{correoAdicional}}',
+  '{{horaSalida}}'
+];

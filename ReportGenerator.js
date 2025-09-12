@@ -79,8 +79,44 @@ class ReportGenerator {
     const bookmarks = this._insertarBloqueEmpresas(doc, body, this.reportData.datosEmpresas);
     this._insertarListaEmpresasConEnlaces(body, this.reportData.datosEmpresas, bookmarks);
 
+    // Inserción controlada: para placeholders desde "GESTIÓN" en adelante aplicamos color azul a las respuestas
+    const azul = '#1155cc';
+    const isFromGestion = (ph) => Array.isArray(PLACEHOLDERS_FROM_GESTION) && PLACEHOLDERS_FROM_GESTION.includes(ph);
+
     this.reportData.datosParaRellenar.forEach(dato => {
-      if (dato.placeholder) body.replaceText(dato.placeholder, dato.respuesta);
+      if (!dato.placeholder) return;
+      const respuesta = String(dato.respuesta ?? '');
+      if (!isFromGestion(dato.placeholder)) {
+        // Inserción directa para placeholders fuera del ámbito
+        body.replaceText(dato.placeholder, respuesta);
+        return;
+      }
+
+      // Evitar aplicar azul a descripciones y valoraciones (consejos ya se estilizan aparte)
+      const baseName = dato.placeholder.slice(2, -2);
+      const esDescripcion = /Descripcion$/i.test(baseName);
+      const esConsejo = /Consejo$/i.test(baseName);
+      if (esDescripcion || esConsejo) {
+        body.replaceText(dato.placeholder, respuesta);
+        return;
+      }
+
+      // Reemplazar por marcador temporal para insertar y estilizar solo la respuesta
+      const marker = `__MARK_${baseName}_${Math.floor(Math.random()*1e6)}__`;
+      body.replaceText(dato.placeholder, marker);
+      let search = body.findText(marker);
+      while (search) {
+        const el = search.getElement().asText();
+        const start = search.getStartOffset();
+        const end = search.getEndOffsetInclusive();
+        // Sustituimos el marcador por la respuesta
+        el.deleteText(start, end);
+        const insertAt = Math.min(start, el.getText().length);
+        el.insertText(insertAt, respuesta);
+        // Aplicamos el color solo al tramo insertado
+        el.setForegroundColor(insertAt, insertAt + respuesta.length - 1, azul);
+        search = body.findText(marker);
+      }
     });
     
     this._insertarDescripcionesConEnlace(body, this.reportData.richDescriptionsToInsert);
