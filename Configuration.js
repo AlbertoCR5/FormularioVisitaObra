@@ -282,5 +282,4 @@ const PLACEHOLDERS_FROM_GESTION = [
   '{{adjuntarImagenes31a40}}',
   '{{adjuntarImagenes41a50}}',
   '{{correoAdicional}}',
-  '{{horaSalida}}'
 ];
