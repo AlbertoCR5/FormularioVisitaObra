@@ -189,14 +189,26 @@ class FormResponseProcessor {
         datosParaRellenar.push({ placeholder: placeholderOriginal, respuesta: formattedEpi || ' ' });
       }
       else if (Array.isArray(respuesta)) {
-        if (titulo === 'Visitador Principal' || titulo === '¿Existen señales para riesgos específicos en el lugar de trabajo concreto?') {
+        if (titulo === 'Visitador Principal') {
+          // Cada visitador en una línea independiente
+          respuesta = respuesta.filter(Boolean).map(s => String(s).trim()).filter(s => s.length > 0).join('\n');
+        } else if (titulo === '¿Existen señales para riesgos específicos en el lugar de trabajo concreto?') {
+          // Se mantiene en línea con comas
           respuesta = respuesta.join(', ');
         } else {
+          // Para el resto de arrays, se usan viñetas y saltos de línea
           respuesta = respuesta.filter(op => op && op.trim() !== '').map(opcion => `➤ ${opcion.trim()}`).join('\n');
         }
         datosParaRellenar.push({ placeholder: placeholderOriginal, respuesta: String(respuesta || ' ') });
       } else {
-        datosParaRellenar.push({ placeholder: placeholderOriginal, respuesta: String(respuesta || ' ') });
+        // Caso de respuestas tipo texto/parrafo
+        let respuestaTexto = String(respuesta || ' ');
+        if (titulo === 'Acompañantes') {
+          // Cada acompañante debe ir en una línea; no dividir por comas porque forman parte de "Nombre, Empresa, Cargo"
+          const lineas = respuestaTexto.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+          respuestaTexto = lineas.join('\n');
+        }
+        datosParaRellenar.push({ placeholder: placeholderOriginal, respuesta: respuestaTexto });
       }
     });
 
