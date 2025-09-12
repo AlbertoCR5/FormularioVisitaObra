@@ -102,6 +102,17 @@ class FormResponseProcessor {
         emails.forEach(email => correosIndividuales.add(email.trim().toLowerCase()));
       }
 
+      // Normalización temprana de valores especiales antes de cualquier inserción
+      if (titulo === 'Fecha Visita' && respuesta) {
+        // Guarda el objeto Date y formatea en español largo: "Viernes, 12 de septiembre de 2025."
+        fechaVisitaObj = new Date(itemResponse.getResponse());
+        respuesta = formatFechaLargaEs(fechaVisitaObj);
+      }
+      if (titulo === 'Acompañantes' && respuesta) {
+        // Limpia correos electrónicos de la cadena de acompañantes
+        respuesta = String(respuesta).replace(/\s*,\s*\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '').trim();
+      }
+
       if (tipo === FormApp.ItemType.FILE_UPLOAD && respuesta && respuesta.length > 0) {
         if (!imageResponses[titulo]) {
           imageResponses[titulo] = [];
@@ -186,15 +197,6 @@ class FormResponseProcessor {
         datosParaRellenar.push({ placeholder: placeholderOriginal, respuesta: String(respuesta || ' ') });
       } else {
         datosParaRellenar.push({ placeholder: placeholderOriginal, respuesta: String(respuesta || ' ') });
-      }
-
-      if (titulo === 'Fecha Visita' && respuesta) {
-        fechaVisitaObj = new Date(itemResponse.getResponse());
-        // Se usa la nueva constante para el formato de fecha del informe.
-        respuesta = Utilities.formatDate(fechaVisitaObj, CONFIG.TIMEZONE, CONFIG.DATE_FORMAT_REPORT);
-      }
-      if (titulo === 'Acompañantes' && respuesta) {
-        respuesta = String(respuesta).replace(/\s*,\s*\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '').trim();
       }
     });
 

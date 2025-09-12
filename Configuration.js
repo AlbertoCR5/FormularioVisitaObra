@@ -23,6 +23,27 @@ const CONFIG = {
 };
 
 /**
+ * Formatea una fecha al estilo español largo: "Viernes, 12 de septiembre de 2025."
+ * - Usa el locale y opciones definidas en CONFIG
+ * - Capitaliza la primera letra
+ * - Asegura punto final
+ * @param {Date|string|number} date Fecha a formatear
+ * @returns {string} Fecha formateada en español largo con punto final
+ */
+function formatFechaLargaEs(date) {
+  const d = (date instanceof Date) ? date : new Date(date);
+  if (isNaN(d.getTime())) return ' ';
+  // toLocaleDateString respeta el timezone del entorno de Apps Script; para nombre de archivo se usa Utilities.formatDate aparte.
+  let texto = d.toLocaleDateString(CONFIG.LOCALE, CONFIG.DATE_FORMAT_OPTIONS);
+  if (!texto) return ' ';
+  // Capitaliza la primera letra
+  texto = texto.charAt(0).toUpperCase() + texto.slice(1);
+  // Asegura punto final
+  if (!/[.!?]$/.test(texto)) texto += '.';
+  return texto;
+}
+
+/**
  * ===================================================================================
  * 🗺️ MAPA DE PREGUNTAS A PLACEHOLDERS
  * ===================================================================================

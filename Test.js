@@ -209,3 +209,13 @@ function enviarRespuestaDePrueba() {
     Logger.log(`❌ ERROR durante la ejecución de la prueba completa: ${error.toString()}\n${error.stack}`);
   }
 }
+
+/**
+ * Prueba rápida del formato de fecha en español largo.
+ * Esperado: "Viernes, 12 de septiembre de 2025."
+ */
+function pruebaFormatoFecha() {
+  const fecha = new Date(2025, 8, 12); // 12 septiembre 2025 (mes 8 = septiembre)
+  const formateada = formatFechaLargaEs(fecha);
+  Logger.log('Fecha formateada => ' + formateada);
+}
