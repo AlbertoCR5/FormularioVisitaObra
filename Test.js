@@ -12,6 +12,8 @@ function generarDatosDePruebaCompletos() {
     const idsImagenes1a10 = todosLosIdsDeImagenes.slice(0, 10);
     const idsImagenes11a20 = todosLosIdsDeImagenes.slice(10, 20);
     const idsImagenes21a30 = todosLosIdsDeImagenes.slice(20, 30);
+    const idsImagenes31a40 = todosLosIdsDeImagenes.slice(30, 40);
+    const idsImagenes41a50 = todosLosIdsDeImagenes.slice(40, 50);
 
     const datosBase = [
         // --- DATOS GENERALES ---
@@ -123,6 +125,8 @@ function generarDatosDePruebaCompletos() {
         { titulo: 'Adjuntar imágenes (1 a 10)', respuesta: idsImagenes1a10, tipo: FormApp.ItemType.FILE_UPLOAD },
         { titulo: 'Adjuntar imágenes (11 a 20)', respuesta: idsImagenes11a20, tipo: FormApp.ItemType.FILE_UPLOAD },
         { titulo: 'Adjuntar imágenes (21 a 30)', respuesta: idsImagenes21a30, tipo: FormApp.ItemType.FILE_UPLOAD },
+        { titulo: 'Adjuntar imágenes (31 a 40)', respuesta: idsImagenes31a40, tipo: FormApp.ItemType.FILE_UPLOAD },
+        { titulo: 'Adjuntar imágenes (41 a 50)', respuesta: idsImagenes41a50, tipo: FormApp.ItemType.FILE_UPLOAD },
 
         // --- OBSERVACIONES Y FINAL ---
         { titulo: 'Utiliza este espacio para añadir cualquier comentario, aclaración o información relevante que consideres importante sobre el trabajo realizado o las condiciones evaluadas.', respuesta: 'Test completo con 20 empresas simuladas.', tipo: FormApp.ItemType.PARAGRAPH_TEXT },

@@ -113,8 +113,8 @@ class ImageProcessor {
 
       // Obtener imagen como PNG para evitar problemas con DPI
       const imageFile = DriveApp.getFileById(fileId);
-      // Obtener imagen como JPEG para reducir el tamaño del archivo
-      const imageBlob = imageFile.getBlob().getAs("image/jpeg");
+      // OPTIMIZACIÓN: Forzar la conversión a JPEG para comprimir y reducir tamaño.
+      const imageBlob = imageFile.getBlob().getAs("image/jpeg"); 
 
       // Insertar imagen
       const insertedImage = cell.insertImage(0, imageBlob);
@@ -151,8 +151,6 @@ class ImageProcessor {
    * @private
    */
   _forceResize(image) {
-    image.setWidth(this.ADJUSTED_IMAGE_SIZE_POINTS).setHeight(this.ADJUSTED_IMAGE_SIZE_POINTS);
-    Utilities.sleep(50); // pequeño delay para que Docs procese
     image.setWidth(this.ADJUSTED_IMAGE_SIZE_POINTS).setHeight(this.ADJUSTED_IMAGE_SIZE_POINTS);
   }
 

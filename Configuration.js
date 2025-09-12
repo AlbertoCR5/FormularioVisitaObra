@@ -16,9 +16,9 @@ const CONFIG = {
   TEMPLATE_DOC_ID: '1gK9pcJ_kOdCeXPcem0iJy8xLSdUdq9xiIaMcNQSlG-4',
   FOLDER_ID: '1V5q_RAjnsOknkFctaxQ4cg4kU1wMM8at',
   TIMEZONE: 'Europe/Madrid',
-  DATE_FORMAT_FILENAME: 'dd-mm-yyyy',
+  DATE_FORMAT_FILENAME: 'dd-MM-yyyy',
   DATE_FORMAT_OPTIONS: { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' },
-  DATE_FORMAT_REPORT: 'dd \'de\' MMMM \'de\' yyyy', // Nuevo formato para la fecha del inform
+  DATE_FORMAT_REPORT: "EEEE, d 'de' MMMM 'de' yyyy",
   LOCALE: 'es-ES'
 };
 

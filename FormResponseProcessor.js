@@ -34,7 +34,20 @@ class FormResponseProcessor {
    * @property {string} disponeLocalRespuesta - La respuesta a la pregunta sobre el local de primeros auxilios.
    */
   process() {
+    const t0 = Date.now();
     const elementosParaOcultar = this._determinarElementosOcultos();
+    const tAfterHidden = Date.now();
+
+    // Optimización: construir un mapa título -> itemResponse para accesos O(1)
+    const titleToItem = new Map();
+    this.itemResponses.forEach(ir => {
+      try {
+        const it = ir.getItem();
+        const t = it && it.getTitle ? it.getTitle() : undefined;
+        if (t) titleToItem.set(t, ir);
+      } catch (e) { /* ignorar elementos problemáticos */ }
+    });
+    const tAfterIndex = Date.now();
 
     const datosParaRellenar = [];
     const ratingDataForStyling = [];
@@ -46,7 +59,7 @@ class FormResponseProcessor {
     let nombreEmpresaPrincipal = '';
     let disponeLocalRespuesta = '';
 
-    const { empresas: datosEmpresas, titulosProcesados } = this._agruparDatosEmpresas();
+  const { empresas: datosEmpresas, titulosProcesados } = this._agruparDatosEmpresas(titleToItem);
 
     datosEmpresas.forEach(empresa => {
       if (empresa.email) correosIndividuales.add(empresa.email.trim().toLowerCase());
@@ -142,15 +155,27 @@ class FormResponseProcessor {
           datosParaRellenar.push({ placeholder: placeholderOriginal, respuesta: '' });
         }
       }
-      else if (titulo === 'Equipos de Protección Individuales (EPI) necesarios según la actividad') {
+      else if (titulo === '¿Equipos de Protección Individuales (EPI) necesarios según la actividad?') {
+        // --- BLOQUE CORREGIDO PARA EPIs ---
+        // Se corrige el título para que coincida con Configuration.js y se mejora la lógica de procesamiento.
         let epiList = [];
         if (Array.isArray(respuesta)) {
-            epiList = respuesta.filter(op => op && op.trim() !== '');
-        } else if (typeof respuesta === 'string') {
-            epiList = respuesta.split(/, |,| /).filter(epi => epi && epi.trim() !== '');
+          // Procesa respuestas de tipo CHECKBOX
+          epiList = respuesta;
+        } else if (respuesta && typeof respuesta === 'string') {
+          // Procesa respuestas de tipo TEXT o PARAGRAPH_TEXT
+          // Divide por comas o espacios, ignorando entradas vacías.
+          epiList = respuesta.split(/[, ]+/);
         }
-        const formattedEpi = epiList.map(epi => `➤ ${epi.trim()}`).join('\n');
-        datosParaRellenar.push({ placeholder: placeholderOriginal, respuesta: formattedEpi });
+        
+        // Filtra, formatea y une la lista final.
+        const formattedEpi = epiList
+          .map(epi => epi.trim()) // Quita espacios extra
+          .filter(Boolean) // Elimina cualquier cadena vacía resultante
+          .map(epi => `➤ ${epi}`) // Añade el prefijo
+          .join('\n'); // Une con saltos de línea
+
+        datosParaRellenar.push({ placeholder: placeholderOriginal, respuesta: formattedEpi || ' ' });
       }
       else if (Array.isArray(respuesta)) {
         if (titulo === 'Visitador Principal' || titulo === '¿Existen señales para riesgos específicos en el lugar de trabajo concreto?') {
@@ -180,8 +205,9 @@ class FormResponseProcessor {
         datosParaRellenar.push({ placeholder: placeholder, respuesta: ' ' });
       }
     });
+    const tAfterFill = Date.now();
     
-    Logger.log('✅ Respuestas procesadas y formateadas.');
+    Logger.log(`✅ Respuestas procesadas y formateadas. Timing(ms): ocultos=${tAfterHidden - t0}, indexado=${tAfterIndex - tAfterHidden}, loop=${tAfterFill - tAfterIndex}, total=${tAfterFill - t0}`);
 
     return {
       datosParaRellenar, ratingDataForStyling, richDescriptionsToInsert,
@@ -217,46 +243,51 @@ class FormResponseProcessor {
    * @returns {{empresas: Company[], titulosProcesados: Set<string>}} Un objeto con el array de empresas y los títulos procesados.
    * @private
    */
-  _agruparDatosEmpresas() {
+  _agruparDatosEmpresas(titleToItem) {
     const empresas = [];
     const titulosProcesados = new Set();
     for (let i = 1; i <= 20; i++) {
       const nombreTitle = `Nombre Empresa ${i}`;
-      const nombreResponse = this.itemResponses.find(ir => ir.getItem().getTitle() === nombreTitle);
-      if (nombreResponse && nombreResponse.getResponse()) {
+      const nombreResponse = titleToItem.get(nombreTitle);
+      if (nombreResponse) {
+        const nombreValue = nombreResponse.getResponse();
+        if (!nombreValue) { continue; }
         const empresa = new Company();
-        empresa.nombre = nombreResponse.getResponse();
+        empresa.nombre = nombreValue;
         titulosProcesados.add(nombreTitle);
 
         const cifTitle = `CIF Empresa ${i}`;
-        const cifResponse = this.itemResponses.find(ir => ir.getItem().getTitle() === cifTitle);
+        const cifResponse = titleToItem.get(cifTitle);
         if (cifResponse && cifResponse.getResponse()) empresa.cif = cifResponse.getResponse();
         titulosProcesados.add(cifTitle);
 
         const contactoTitle = `Persona Contacto Empresa ${i}`;
-        const contactoResponse = this.itemResponses.find(ir => ir.getItem().getTitle() === contactoTitle);
+        const contactoResponse = titleToItem.get(contactoTitle);
         if (contactoResponse && contactoResponse.getResponse()) empresa.personaDeContacto = contactoResponse.getResponse();
         titulosProcesados.add(contactoTitle);
 
         const cargoTitle = `Cargo contacto Empresa ${i}`;
-        const cargoResponse = this.itemResponses.find(ir => ir.getItem().getTitle() === cargoTitle);
+        const cargoResponse = titleToItem.get(cargoTitle);
         if (cargoResponse && cargoResponse.getResponse()) empresa.cargo = cargoResponse.getResponse();
         titulosProcesados.add(cargoTitle);
 
         const emailTitle = `Correo Electrónico Contacto Empresa ${i}`;
-        const emailResponse = this.itemResponses.find(ir => ir.getItem().getTitle() === emailTitle);
+        const emailResponse = titleToItem.get(emailTitle);
         if (emailResponse && emailResponse.getResponse()) empresa.email = emailResponse.getResponse();
         titulosProcesados.add(emailTitle);
 
         const intervencionTitle = `La empresa ${i} interviene como`;
-        const intervencionResponse = this.itemResponses.find(ir => ir.getItem().getTitle() === intervencionTitle);
+        const intervencionResponse = titleToItem.get(intervencionTitle);
         if (intervencionResponse && intervencionResponse.getResponse()) empresa.intervieneComo = intervencionResponse.getResponse();
         titulosProcesados.add(intervencionTitle);
 
         const trabajosTitle = `Qué trabajos está ejecutando la empresa ${i}?`;
-        const trabajosResponse = this.itemResponses.find(ir => ir.getItem().getTitle() === trabajosTitle);
-        if (trabajosResponse && trabajosResponse.getResponse().length > 0) {
-          empresa.trabajosQueEjecuta = trabajosResponse.getResponse().map(trabajo => `➤ ${trabajo.trim()}`).join('\n');
+        const trabajosResponse = titleToItem.get(trabajosTitle);
+        if (trabajosResponse) {
+          const trabajosValue = trabajosResponse.getResponse();
+          if (Array.isArray(trabajosValue) && trabajosValue.length > 0) {
+            empresa.trabajosQueEjecuta = trabajosValue.map(trabajo => `➤ ${trabajo.trim()}`).join('\n');
+          }
         }
         titulosProcesados.add(trabajosTitle);
         empresas.push(empresa);
