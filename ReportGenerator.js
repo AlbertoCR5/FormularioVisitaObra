@@ -28,26 +28,69 @@ class ReportGenerator {
       // FASE 2: Crear el documento.
       const { doc, body } = this._crearDocumentoDesdePlantilla();
       
-      // FASE 3: Rellenar contenido de texto y datos.
+  // FASE 3: Rellenar contenido de texto y datos.
       this._rellenarContenido(doc, body);
-      
-      // FASE 4: Insertar las imágenes adjuntas.
+
+  // FASE 4: Renombrar los archivos adjuntos.
+  this._renameAttachedFiles();
+
+  // FASE 5: Insertar las imágenes adjuntas.
       this._insertarGruposDeImagenes(body);
-      
-      // FASE 5: Aplicar estilos finales.
+
+  // FASE 6: Aplicar estilos finales.
       this._aplicarEstilosFinales(body);
 
-      // FASE 6: Guardar y cerrar.
+  // FASE 7: Guardar y cerrar.
       doc.saveAndClose();
       Logger.log(`✅ Informe completado correctamente: ${doc.getUrl()}`);
 
-      // FASE 7: Enviar por correo.
+  // FASE 8: Enviar por correo.
       const emailSender = new EmailSender(doc, this.reportData);
       emailSender.send();
 
     } catch (error) {
       Logger.log(`❌ ERROR en ReportGenerator.generate: ${error.toString()}\n${error.stack}`);
     }
+  }
+
+  /**
+   * Renombra los archivos adjuntos a un patrón secuencial para una mejor organización.
+   * Formato: IMG_yyyyMMdd_0001.ext
+   * - Usa la fecha actual para el bloque de fecha.
+   * - Mantiene los IDs (renombrar no afecta a la inserción posterior por ID).
+   * @private
+   */
+  _renameAttachedFiles() {
+    Logger.log('🔄 Iniciando el renombrado de los archivos adjuntos.');
+    const allImageIds = Object.values(this.reportData.imageResponses || {}).flat();
+
+    if (!allImageIds || allImageIds.length === 0) {
+      Logger.log('🤷 No hay archivos adjuntos para renombrar.');
+      return;
+    }
+
+  const dateBase = this.reportData.fechaVisitaObj || new Date();
+  // Usamos el formato de nombre de archivo y quitamos guiones; depende de CONFIG.DATE_FORMAT_FILENAME
+  const dateFormatted = Utilities.formatDate(dateBase, CONFIG.TIMEZONE, CONFIG.DATE_FORMAT_FILENAME).replace(/-/g, '');
+
+    allImageIds.forEach((fileId, index) => {
+      try {
+        const file = DriveApp.getFileById(fileId);
+        const currentName = file.getName();
+        const dot = currentName.lastIndexOf('.');
+        const extension = dot > -1 ? currentName.substring(dot + 1) : 'bin';
+
+        // Formato nnnn: padStart(4, '0') asegura 4 dígitos, ej: 0001
+        const newName = `IMG_${dateFormatted}_${String(index + 1).padStart(4, '0')}.${extension}`;
+
+        file.setName(newName);
+        Logger.log(`✅ Renombrado "${currentName}" a "${newName}"`);
+      } catch (e) {
+        Logger.log(`❌ Error al renombrar el archivo con ID ${fileId}: ${e && e.message ? e.message : e}`);
+      }
+    });
+
+    Logger.log('✅ Finalizado el proceso de renombrado de archivos.');
   }
 
   /**
